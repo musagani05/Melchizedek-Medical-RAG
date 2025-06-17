@@ -1,3 +1,4 @@
+# src/indexer/multimodal_indexer.py
 import os
 import re
 from PIL import Image
@@ -11,8 +12,7 @@ def preprocess_text(text):
     return text.strip()
 
 def chunk_text(text, chunk_size=500, overlap=50):
-    chunks = []
-    start = 0
+    chunks, start = [], 0
     while start < len(text):
         end = min(start + chunk_size, len(text))
         chunks.append(text[start:end])
@@ -20,49 +20,59 @@ def chunk_text(text, chunk_size=500, overlap=50):
     return chunks
 
 def index_text_files(folder_path, collection, txt_model):
-    for filename in os.listdir(folder_path):
-        if not filename.endswith('.txt'):
+    for fn in os.listdir(folder_path):
+        if not fn.endswith('.txt'):
             continue
-        with open(os.path.join(folder_path, filename), 'r', encoding='utf-8') as f:
+        with open(os.path.join(folder_path, fn), encoding='utf-8') as f:
             raw = f.read()
-        text = preprocess_text(raw)
+        text   = preprocess_text(raw)
         chunks = chunk_text(text)
-        embs = txt_model.encode(chunks).tolist()
-        for i, (chunk, emb) in enumerate(zip(chunks, embs)):
+        embs   = txt_model.encode(chunks).tolist()
+        for i, (c, e) in enumerate(zip(chunks, embs)):
             collection.add(
-                ids=[f"{filename}_chunk{i}"],
-                documents=[chunk],
-                embeddings=[emb],
-                metadatas=[{"source": filename, "type": "text"}]
+                ids=[f"{fn}_chunk{i}"],
+                documents=[c],
+                embeddings=[e],
+                metadatas=[{"source": fn, "type": "text"}]
             )
-        print(f"[INDEX] Text: {filename}")
+    print("[INDEX] Text indexing done.")
 
 def index_image_files(folder_path, collection, img_model):
-    for filename in os.listdir(folder_path):
-        if not filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+    for fn in os.listdir(folder_path):
+        if not fn.lower().endswith(('.png','.jpg','jpeg','bmp')):
             continue
-        img = Image.open(os.path.join(folder_path, filename)).convert('RGB')
+        img = Image.open(os.path.join(folder_path, fn)).convert('RGB')
         emb = img_model.encode(img).tolist()
         collection.add(
-            ids=[filename],
-            documents=[f"<Image: {filename}>"],
+            ids=[fn],
+            documents=[f"<Image: {fn}>"],
             embeddings=[emb],
-            metadatas=[{"source": filename, "type": "image"}]
+            metadatas=[{"source": fn, "type": "image"}]
         )
-        print(f"[INDEX] Image: {filename}")
+    print("[INDEX] Image indexing done.")
 
-if __name__ == "__main__":
+def build_multimodal_index(
+    pdf_folder: str = "data/pdf_texts",
+    audio_folder: str = "data/audio_texts",
+    image_folder: str = "data/images",
+    chroma_path: str = "chroma_db",
+    collection_name: str = "RAG-MEDICAL"
+):
+    # 1. Buat client & collection persistent
     client = chromadb.PersistentClient(
-        path="./chroma_db",
+        path=chroma_path,
         settings=Settings(anonymized_telemetry=False)
     )
-    collection = client.get_or_create_collection("rag_medical")
+    coll   = client.get_or_create_collection(collection_name)
 
+    # 2. Load model
     txt_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     img_model = SentenceTransformer('clip-ViT-B-32')
 
-    index_text_files('data/pdf_texts', collection, txt_model)
-    index_text_files('data/audio_texts', collection, txt_model)
-    index_image_files('data/images', collection, img_model)
+    # 3. Index semua modalitas
+    os.makedirs(chroma_path, exist_ok=True)
+    index_text_files(pdf_folder, coll, txt_model)
+    index_text_files(audio_folder, coll, txt_model)
+    index_image_files(image_folder, coll, img_model)
 
-    print("[INDEX] Multimodal indexing selesai dan data tersimpan otomatis.")
+    print("[INDEX] Multimodal index build complete.")
