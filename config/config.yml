@@ -1,0 +1,31 @@
+# config/config.yml
+
+vector_store:
+  type: chromadb
+  persist_directory: './.chromadb'
+
+embedding:
+  model_name: 'sentence-transformers/all-MiniLM-L6-v2'
+
+audio:
+  whisper_model: 'base'
+
+ollama:
+  model: 'deepseek/r1:7b'
+  device: 'cuda'
+
+pipeline:
+  # Berapa banyak dokumen teratas yang diambil dari vector store
+  top_k: 5
+
+  # Ukuran per chunk (dalam karakter atau token—sesuaikan dengan implementasi)
+  chunk_size: 800
+
+  # Template prompt yang dikirim ke LLM.
+  # {chunks} akan digantikan daftar teks chunk, {query} adalah pertanyaan user.
+  prompt_template: |
+    Berikut ini adalah cuplikan dari dokumen Anda:
+    {chunks}
+
+    Berdasarkan cuplikan di atas, jawablah pertanyaan berikut dengan singkat dan tepat:
+    "{query}"

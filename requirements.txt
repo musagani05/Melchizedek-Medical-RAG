@@ -1,0 +1,7 @@
+gradio
+uvicorn[standard]        # opsional jika nanti butuh deploy FastAPI
+python-multipart         # opsi upload file, jika diperlukan
+chromadb
+sentence-transformers
+chromadb
+sentence-transformers

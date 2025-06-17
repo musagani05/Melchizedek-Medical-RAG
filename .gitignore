@@ -1,0 +1,10 @@
+# Ollama local models
+#C:/Users/user/.ollama/
+# Python
+__pycache__/
+*.pyc
+# Chroma DB
+chroma_db/
+# Data besar
+data/pdf_texts/
+data/articles/
