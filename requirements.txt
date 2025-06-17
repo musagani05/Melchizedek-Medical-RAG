@@ -1,4 +1,4 @@
-gradio
+gradio==5.34.0
 uvicorn[standard]        # opsional jika nanti butuh deploy FastAPI
 python-multipart         # opsi upload file, jika diperlukan
 chromadb
