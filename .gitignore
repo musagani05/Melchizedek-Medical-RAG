@@ -13,3 +13,4 @@ venv/
 *.log
 #PDF, Text Book
 *.pdf
+*.json
