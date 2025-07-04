@@ -5,7 +5,10 @@ venv/
 # Env
 .env
 # Database
-chroma_db/
+# Vector DB
+/chroma_db/
+*.sqlite3
+*.bin
 # Logs
 *.log
 #PDF, Text Book
