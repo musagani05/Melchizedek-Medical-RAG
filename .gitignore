@@ -1,10 +1,12 @@
-# Ollama local models
-#C:/Users/user/.ollama/
 # Python
 __pycache__/
-*.pyc
-# Chroma DB
+*.py[cod]
+venv/
+# Env
+.env
+# Database
 chroma_db/
-# Data besar
-data/pdf_texts/
-data/articles/
+# Logs
+*.log
+#PDF, Text Book
+*.pdf

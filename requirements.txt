@@ -1,8 +1,9 @@
-gradio==5.34.0
-uvicorn[standard]        # opsional jika nanti butuh deploy FastAPI
-python-multipart         # opsi upload file, jika diperlukan
-chromadb
-sentence-transformers
-chromadb
-sentence-transformers
-pillow
+faiss-cpu==1.7.2
+langchain==0.0.108
+transformers==4.17.0
+chromadb==0.3.0
+upstash==1.0.0
+redis==4.0.0
+openai==0.10.0
+flask==2.0.1
+fastapi==0.70.0
