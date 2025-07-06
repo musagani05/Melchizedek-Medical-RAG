@@ -14,3 +14,4 @@ tqdm
 Pillow
 filelock
 importlib-metadata
+hnswlib
