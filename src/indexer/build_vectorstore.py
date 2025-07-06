@@ -1,54 +1,67 @@
+#!/usr/bin/env python3
 """
-Load embeddings .npz → tambahkan ke Chroma collection "medical_docs"
+Build and persist Chroma vectorstore from embeddings .npz files,
+using config/config.yml for settings.
 """
-import os, json
+import os
+import json
 import numpy as np
 import yaml
 from dotenv import load_dotenv
-import chromadb
+from chromadb import Client
 from chromadb.config import Settings
 
-# 1. Load config/env
-load_dotenv(dotenv_path="config/.env")
-with open("config/config.yml") as f:
+# Load environment variables
+load_dotenv(dotenv_path=os.path.join("config", ".env"))
+
+# Load config from config/config.yml
+config_path = os.path.join("config", "config.yml")
+with open(config_path, "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
-DB_PATH = cfg["vectorstore"]["path"]  # e.g. ./chroma_db
 
-# 2. Init Chroma client & collection
-client = chromadb.Client(
-    Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=DB_PATH
-    )
+# Retrieve vectorstore settings
+DB_PATH = cfg["vectorstore"]["path"]
+COLLECTION_NAME = cfg["vectorstore"].get("collection_name", "medical_docs")
+
+# Initialize Chroma client with new Settings API
+settings = Settings(
+    persist_directory=DB_PATH,
+    chroma_db_impl="duckdb+parquet"
 )
-coll = client.get_or_create_collection(name="medical_docs")
+client = Client(settings=settings)
 
-# 3. Paths
-EMB_DIR  = "data/embeddings"
-JSON_DIR = "data/pdf_texts_json"
+# Get or create the collection
+coll = client.get_or_create_collection(name=COLLECTION_NAME)
 
-# 4. Add tiap .npz ke collection
+# Define data directories
+EMB_DIR = os.path.join("data", "embeddings")
+JSON_DIR = os.path.join("data", "pdf_texts_json")
+
+# Iterate over embeddings files and index
 for fn in os.listdir(EMB_DIR):
     if not fn.endswith(".npz"):
         continue
     base = fn[:-4]
-    data = np.load(os.path.join(EMB_DIR, fn), allow_pickle=True)
-    embs = data["embeddings"]
-    metas = data["metadata"].tolist()  # list of dict: {document, section}
+    arr = np.load(os.path.join(EMB_DIR, fn), allow_pickle=True)
+    embeddings = arr["embeddings"]
+    metadata = arr["metadata"].tolist()
 
-    # load full text untuk documents field
-    doc = json.load(open(os.path.join(JSON_DIR, base + ".json"), encoding="utf-8"))
+    # Load original JSON for document content
+    json_file = os.path.join(JSON_DIR, base + ".json")
+    with open(json_file, "r", encoding="utf-8") as jf:
+        doc = json.load(jf)
     texts = [sec["content"] for sec in doc["sections"]]
-    ids   = [f"{base}_{i}" for i in range(len(texts))]
+    ids = [f"{base}_{i}" for i in range(len(texts))]
 
+    # Add entries to the collection
     coll.add(
-        embeddings=embs.tolist(),
+        embeddings=embeddings.tolist(),
         documents=texts,
-        metadatas=metas,
+        metadatas=metadata,
         ids=ids
     )
-    print(f"[+] Indexed {base}: {len(texts)} items")
+    print(f"[+] Indexed document {base} ({len(texts)} sections)")
 
-# 5. Persist DB
+# Persist the database to disk
 client.persist()
-print("Vectorstore tersimpan di", DB_PATH)
+print(f"Vectorstore persisted at {DB_PATH}")
