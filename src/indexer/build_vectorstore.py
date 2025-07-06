@@ -1,43 +1,42 @@
-#!/usr/bin/env python3
 """
 Build and persist Chroma vectorstore from embeddings .npz files,
-using config/config.yml for settings.
+using config/config.yaml for settings.
 """
 import os
 import json
 import numpy as np
 import yaml
 from dotenv import load_dotenv
-from chromadb import Client
+import chromadb
 from chromadb.config import Settings
 
-# Load environment variables
+# 1. Load environment variables
 load_dotenv(dotenv_path=os.path.join("config", ".env"))
 
-# Load config from config/config.yml
+# 2. Load config
 config_path = os.path.join("config", "config.yml")
 with open(config_path, "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
 
-# Retrieve vectorstore settings
+# 3. Retrieve vectorstore settings
 DB_PATH = cfg["vectorstore"]["path"]
 COLLECTION_NAME = cfg["vectorstore"].get("collection_name", "medical_docs")
 
-# Initialize Chroma client with new Settings API
+# 4. Initialize Chroma client
 settings = Settings(
-    persist_directory=DB_PATH,
-    chroma_db_impl="duckdb+parquet"
+    chroma_db_impl="duckdb+parquet",
+    persist_directory=DB_PATH
 )
-client = Client(settings=settings)
+client = chromadb.Client(settings=settings)
 
-# Get or create the collection
+# 5. Get or create the collection
 coll = client.get_or_create_collection(name=COLLECTION_NAME)
 
-# Define data directories
+# 6. Define data directories
 EMB_DIR = os.path.join("data", "embeddings")
 JSON_DIR = os.path.join("data", "pdf_texts_json")
 
-# Iterate over embeddings files and index
+# 7. Iterate over embeddings files and index
 for fn in os.listdir(EMB_DIR):
     if not fn.endswith(".npz"):
         continue
@@ -62,6 +61,6 @@ for fn in os.listdir(EMB_DIR):
     )
     print(f"[+] Indexed document {base} ({len(texts)} sections)")
 
-# Persist the database to disk
+# 8. Persist the database to disk
 client.persist()
-print(f"Vectorstore persisted at {DB_PATH}")
+print(f"[✓] Vectorstore persisted at {DB_PATH}")
