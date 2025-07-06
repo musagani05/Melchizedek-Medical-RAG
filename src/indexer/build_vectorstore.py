@@ -10,7 +10,7 @@ from chromadb.config import Settings
 
 # 1. Load config/env
 load_dotenv(dotenv_path="config/.env")
-with open("config/config.yaml") as f:
+with open("config/config.yml") as f:
     cfg = yaml.safe_load(f)
 DB_PATH = cfg["vectorstore"]["path"]  # e.g. ./chroma_db
 

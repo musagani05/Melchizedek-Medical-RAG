@@ -13,3 +13,4 @@ python-dotenv
 tqdm
 Pillow
 filelock
+importlib-metadata
