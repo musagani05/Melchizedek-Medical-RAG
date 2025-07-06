@@ -8,9 +8,9 @@ PDF_DIR = "data/pdf_texts"
 def list_pdfs(pdf_dir):
     files = [f for f in os.listdir(pdf_dir) if f.lower().endswith(".pdf")]
     if not files:
-        print(f"[!] Tidak ada PDF di {pdf_dir}.")
+        print(f"Tidak ada PDF di {pdf_dir}.")
     else:
-        print(f"[✓] Ditemukan {len(files)} PDF:")
+        print(f"Ditemukan {len(files)} PDF:")
         for fn in files:
             print("   -", fn)
 

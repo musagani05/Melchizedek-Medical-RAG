@@ -1,4 +1,3 @@
-# src/retriever/retrieve.py
 import argparse
 import chromadb
 from chromadb.config import Settings
@@ -126,7 +125,7 @@ def post_process(raw: str, hits: list) -> str:
 def generate_answer(query: str, top_k: int = 5) -> str:
     hits = retrieve_and_rerank(query, coarse_k=top_k*4, final_k=top_k)
     if not hits:
-        return "⚠️ Tidak ditemukan konteks."
+        return "Tidak ditemukan konteks."
     prompt = build_prompt(query, hits)
     proc = subprocess.run(
         ['ollama', 'run', 'registry.ollama.ai/library/deepseek-r1:7b'],
@@ -137,7 +136,7 @@ def generate_answer(query: str, top_k: int = 5) -> str:
         capture_output=True
     )
     if proc.returncode != 0:
-        return f"⚠️ Model error: {proc.stderr.strip()}"
+        return f"Model error: {proc.stderr.strip()}"
     return post_process(proc.stdout, hits)
 
 

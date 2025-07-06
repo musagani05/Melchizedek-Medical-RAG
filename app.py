@@ -10,7 +10,7 @@ from src.retriever.retrieve import generate_answer
 # On‑the‑fly index build jika folder kosong
 def ensure_index():
     if not os.path.isdir("chroma_db") or not os.listdir("chroma_db"):
-        from src.indexer.multimodal_indexer import build_multimodal_index
+        from multimodal.multimodal_indexer import build_multimodal_index
         build_multimodal_index(
             pdf_folder="data/articles",
             audio_folder="data/audio_texts",

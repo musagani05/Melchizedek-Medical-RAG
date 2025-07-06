@@ -1,3 +1,4 @@
+''' #For Future Projects
 import os
 import re
 import fitz  # PyMuPDF
@@ -193,3 +194,4 @@ def build_multimodal_index(
     index_image_files(image_folder, coll, img_model)
 
     print("[INDEX] Semua modalitas selesai.")
+'''

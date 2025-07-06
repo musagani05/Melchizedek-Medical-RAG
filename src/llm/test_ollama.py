@@ -23,6 +23,6 @@ cmd = [
 # 5) Jalankan dan tangani output/error
 proc = subprocess.run(cmd, capture_output=True, text=True)
 if proc.returncode != 0:
-    print("❌ Error saat memanggil ollama:\n", proc.stderr)
+    print("Error saat memanggil ollama:\n", proc.stderr)
 else:
-    print("✅ Response dari ollama:\n", proc.stdout)
+    print("Response dari ollama:\n", proc.stdout)
