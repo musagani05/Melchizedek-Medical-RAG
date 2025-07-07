@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 # Panggil generate_answer dari modul retrieve
-from src.retriever.retrieve import generate_answer
+from archive.retrieve import generate_answer
 
 # On‑the‑fly index build jika folder kosong
 def ensure_index():
@@ -48,7 +48,7 @@ with demo:
         try:
             bot_msg = generate_answer(message, top_k=TOP_K)
         except Exception as e:
-            bot_msg = f"⚠️ Error: {e}"
+            bot_msg = f"Error: {e}"
         history = history + [(message, bot_msg)]
         return "", history
 
@@ -57,7 +57,7 @@ with demo:
 
     def flag_conversation(history):
         with open("flags.log", "a", encoding="utf-8") as f:
-            f.write("🚩 FLAGGED CONVERSATION 🚩\n")
+            f.write("FLAGGED CONVERSATION 🚩\n")
             for user_msg, bot_msg in history:
                 f.write(f"Q: {user_msg}\nA: {bot_msg}\n\n")
         return None

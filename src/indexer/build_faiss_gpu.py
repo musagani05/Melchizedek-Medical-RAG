@@ -60,7 +60,7 @@ cfg_gpu = faiss.GpuIndexFlatConfig()
 cfg_gpu.device = int(os.getenv("FAISS_GPU_DEVICE", 0))
 gpu_index = faiss.GpuIndexFlatIP(res, dim, cfg_gpu)
 gpu_index.add(np.array(vectors, dtype=np.float32))
-print(f"[✓] Built FAISS GPU index of dimension {dim}")
+print(f"Built FAISS GPU index of dimension {dim}")
 
 # 8. Wrap with LangChain FAISS and persist
 faiss_store = FAISS.from_documents(
@@ -72,4 +72,4 @@ faiss_store = FAISS.from_documents(
 )
 os.makedirs(INDEX_PATH, exist_ok=True)
 faiss_store.save_local(INDEX_PATH)
-print(f"[✓] FAISS GPU vectorstore saved to {INDEX_PATH}")
+print(f"FAISS GPU vectorstore saved to {INDEX_PATH}")
