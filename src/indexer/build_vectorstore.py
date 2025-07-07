@@ -1,66 +1,75 @@
+#!/usr/bin/env python3
 """
-Build and persist Chroma vectorstore from embeddings .npz files,
-using config/config.yaml for settings.
+Build and persist FAISS GPU vectorstore from extracted JSON sections,
+using LangChain and config/config.yaml for settings.
 """
 import os
 import json
-import numpy as np
 import yaml
 from dotenv import load_dotenv
-import chromadb
-from chromadb.config import Settings
+import numpy as np
+import faiss
+
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
 
 # 1. Load environment variables
 load_dotenv(dotenv_path=os.path.join("config", ".env"))
 
 # 2. Load config
-config_path = os.path.join("config", "config.yml")
+config_path = os.path.join("config", "config.yaml")
 with open(config_path, "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
 
 # 3. Retrieve vectorstore settings
-DB_PATH = cfg["vectorstore"]["path"]
-COLLECTION_NAME = cfg["vectorstore"].get("collection_name", "medical_docs")
+INDEX_PATH = cfg["vectorstore"]["path"]
 
-# 4. Initialize Chroma client
-settings = Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory=DB_PATH
+# 4. Initialize embeddings
+model_name = os.getenv("EMBEDDING_MODEL")
+embeddings = HuggingFaceEmbeddings(
+    model_name=model_name,
+    model_kwargs={"device":"cuda","trust_remote_code":True}
 )
-client = chromadb.Client(settings=settings)
 
-# 5. Get or create the collection
-coll = client.get_or_create_collection(name=COLLECTION_NAME)
-
-# 6. Define data directories
-EMB_DIR = os.path.join("data", "embeddings")
+# 5. Load all sections from JSON
 JSON_DIR = os.path.join("data", "pdf_texts_json")
-
-# 7. Iterate over embeddings files and index
-for fn in os.listdir(EMB_DIR):
-    if not fn.endswith(".npz"):
+texts = []
+metadatas = []
+ids = []
+for fname in sorted(os.listdir(JSON_DIR)):
+    if not fname.endswith(".json"):
         continue
-    base = fn[:-4]
-    arr = np.load(os.path.join(EMB_DIR, fn), allow_pickle=True)
-    embeddings = arr["embeddings"]
-    metadata = arr["metadata"].tolist()
-
-    # Load original JSON for document content
-    json_file = os.path.join(JSON_DIR, base + ".json")
-    with open(json_file, "r", encoding="utf-8") as jf:
+    base = fname[:-5]
+    with open(os.path.join(JSON_DIR, fname), "r", encoding="utf-8") as jf:
         doc = json.load(jf)
-    texts = [sec["content"] for sec in doc["sections"]]
-    ids = [f"{base}_{i}" for i in range(len(texts))]
+    for idx, sec in enumerate(doc["sections"]):
+        texts.append(sec["content"])
+        metadatas.append({"document": base, "section": sec["title"]})
+        ids.append(f"{base}_{idx}")
 
-    # Add entries to the collection
-    coll.add(
-        embeddings=embeddings.tolist(),
-        documents=texts,
-        metadatas=metadata,
-        ids=ids
-    )
-    print(f"[+] Indexed document {base} ({len(texts)} sections)")
+# 6. Embed documents
+print(f"[→] Embedding {len(texts)} sections with {model_name}...")
+vectors = embeddings.embed_documents(texts)
 
-# 8. Persist the database to disk
-client.persist()
-print(f"[✓] Vectorstore persisted at {DB_PATH}")
+# 7. Build FAISS GPU index
+if len(vectors) == 0:
+    raise ValueError("No vectors to index. Check JSON extraction step.")
+dim = len(vectors[0])
+res = faiss.StandardGpuResources()
+cfg_gpu = faiss.GpuIndexFlatConfig()
+cfg_gpu.device = int(os.getenv("FAISS_GPU_DEVICE", 0))
+gpu_index = faiss.GpuIndexFlatIP(res, dim, cfg_gpu)
+gpu_index.add(np.array(vectors, dtype=np.float32))
+print(f"[✓] Built FAISS GPU index of dimension {dim}")
+
+# 8. Wrap with LangChain FAISS and persist
+faiss_store = FAISS.from_documents(
+    documents=texts,
+    embedding=embeddings,
+    metadatas=metadatas,
+    ids=ids,
+    index=gpu_index
+)
+os.makedirs(INDEX_PATH, exist_ok=True)
+faiss_store.save_local(INDEX_PATH)
+print(f"[✓] FAISS GPU vectorstore saved to {INDEX_PATH}")
