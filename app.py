@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 # Panggil generate_answer dari modul retrieve
-from archive.retrieve import generate_answer
+from archive.retriever import generate_answer
 
 # On‑the‑fly index build jika folder kosong
 def ensure_index():
