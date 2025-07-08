@@ -1,9 +1,8 @@
 pdf_texts_dir: ../data/pdf_texts
 vectorstore:
-  type: chroma
-  path: ../chroma_db
+  path: ../faiss_index
 embedding:
-  model: cambridgeltl/SapBERT-from-PubMedBERT-fulltext
+  model: cambridgeltl/SapBERT-UMLS-2020AB-all-lang-from-XLMR
 llm:
   backend: cuda
   model: ollama/deepseek/r1:8b
