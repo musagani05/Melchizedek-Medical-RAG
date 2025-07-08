@@ -6,3 +6,6 @@ PyYAML
 gradio
 pdfplumber
 regex
+numpy
+torch
+transformers
